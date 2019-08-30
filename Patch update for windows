@@ -1,0 +1,31 @@
+---
+- name: patch installation on windows
+  hosts: windows
+  gather_facts: no
+  tasks:
+  - name: create a folder
+    win_file:
+      path: C:\Users\Administrator\patch
+      state: directory
+  - name: copy a update file
+    win_copy:
+      src: /opt/windows10.0-kb4511553-x64_a67329ef92df959050847b10d583e6c54aa3b3d4.msu
+      dest: C:\Users\Administrator\patch\
+  - name: Install hotfix
+    win_hotfix:
+      source: C:\Users\Administrator\patch\windows10.0-kb4511553-x64_a67329ef92df959050847b10d583e6c54aa3b3d4.msu
+      state: present
+    register: hotfix_install
+
+  - win_reboot:
+    when: hotfix_install.reboot_required
+
+  - name: remove kb4511553 remove file
+    win_file:
+      path: C:\Users\Administrator\patch\windows10.0-kb4511553-x64_a67329ef92df959050847b10d583e6c54aa3b3d4.msu
+      state: absent
+
+  - name: waiting for remove kb4511553 hotfix file
+    win_wait_for:
+      path: C:\Users\Administrator\patch\windows10.0-kb4511553-x64_a67329ef92df959050847b10d583e6c54aa3b3d4.msu
+      state: absent
