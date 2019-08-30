@@ -1,0 +1,15 @@
+[root@ansible opt]# cat /home/anbu/ansible/installputty.yml
+---
+- name: putty installation on windows
+  hosts: windows
+  tasks:
+  - name: create a folder
+    win_file:
+      path: C:\Users\Administrator\putty
+      state: directory
+  - name: copy a installation  file
+    win_copy:
+      src: /opt/putty-64bit-0.72-installer.msi
+      dest: C:\Users\Administrator\putty\
+  - name: Install putty on windows
+    win_command: C:\Windows\System32\msiexec.exe /i C:\Users\Administrator\putty\putty-64bit-0.72-installer.msi
