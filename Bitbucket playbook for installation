@@ -20,7 +20,7 @@
   - name: Install Git
     yum:
       name: git
-      state: present
+      state: latest
   - name: Fill response varfile content
     lineinfile:
       path: /home/anbu/response.varfile
