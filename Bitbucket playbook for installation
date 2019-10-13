@@ -1,0 +1,45 @@
+---
+- name: Bitbucket Installation
+  hosts: 192.168.56.124
+  tasks:
+  - name: Create response varfile
+    file:
+      path: /home/anbu/response.varfile
+      state: touch
+      mode: 0755
+  - name: Create a bitbucket directory
+    file:
+      path: /opt/bitbucket
+      state: directory
+      mode : 0755
+  - name: copy a bitbucket installer file from ansible server
+    copy:
+      src: /opt/bitbucket/atlassian-bitbucket-5.16.10-x64.bin
+      dest: /opt/bitbucket/
+      mode: 0755
+  - name: Fill response varfile content
+    lineinfile:
+      path: /home/anbu/response.varfile
+      line: "{{ item.line }}"
+      state: present
+      create: yes
+    with_items:
+      - { line: 'app.bitbucketHome=/var/atlassian/application-data/bitbucket' }
+      - { line: 'app.defaultInstallDir=/opt/atlassian/bitbucket' }
+      - { line: 'app.install.service$Boolean=true' }
+      - { line: 'executeLauncherAction$Boolean=true' }
+      - { line: 'installation.type=INSTALL' }
+      - { line: 'httpPort=7990' }
+      - { line: 'sys.languageId=en' }
+      - { line: 'sys.adminRights$Boolean=true' }
+      - { line: 'launch.application$Boolean=true' }
+      - { line: 'serverPort=8006' }
+      - { line: 'portChoice=default' }
+
+  - name: Install  bitbucket from response varfile
+    command: /opt/bitbucket/atlassian-bitbucket-5.16.10-x64.bin  -q -varfile /home/anbu/response.varfile
+
+  - name: Remove response.varfile
+    file:
+      path: /home/anbu/response.varfile
+      state: absent
