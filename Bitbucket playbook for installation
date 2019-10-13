@@ -17,6 +17,10 @@
       src: /opt/bitbucket/atlassian-bitbucket-5.16.10-x64.bin
       dest: /opt/bitbucket/
       mode: 0755
+  - name: Install Git
+    yum:
+      name: git
+      state: present
   - name: Fill response varfile content
     lineinfile:
       path: /home/anbu/response.varfile
