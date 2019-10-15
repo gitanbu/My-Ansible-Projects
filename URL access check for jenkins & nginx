@@ -1,0 +1,18 @@
+---
+- name: Jenkins URL Status
+  hosts: jenkins
+  ignore_errors: yes
+  tasks:
+  - name: Check that you can connect (GET) to a page and it returns a status 200 for jenkins
+    uri:
+      url: http://jenkins.anbu.com:8080
+      user: admin
+      password: "admin"
+      force_basic_auth: yes
+      return_content: yes
+- name: Nginx check
+  hosts: nginx
+  tasks:
+  - name: Nginx status check
+    uri:
+      url: http://192.168.56.125:80
