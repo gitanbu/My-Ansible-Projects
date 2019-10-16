@@ -1,0 +1,117 @@
+---
+- name: Qbase & DSF Automation setup
+  hosts: 192.168.56.126
+  tasks:
+  - name: Download java corretto devel 11.0.3 version
+    get_url:
+      url: https://d3pxv6yz143wms.cloudfront.net/11.0.3.7.1/java-11-amazon-corretto-devel-11.0.3.7-1.x86_64.rpm
+      dest: /opt/
+      mode: '0755'
+
+  - name: Install java corretto devel 11.0.3 version
+    yum:
+      name: /opt/java-11-amazon-corretto-devel-11.0.3.7-1.x86_64.rpm
+      state: present
+
+  - name: check java verion
+    shell: java -version 2>&1
+    register: javaoutput
+  - debug: msg={{javaoutput.stdout}}
+
+
+  - name: Create nodejs directory
+    file:
+      path: /usr/local/lib/nodejs
+      state: directory
+      mode: '0755'
+
+  - name: Download a node js 10.16 version
+    get_url:
+      url: https://nodejs.org/dist/v10.16.0/node-v10.16.0-linux-x64.tar.gz
+      dest: /opt/
+
+  - name: untar a node js installer on nodejs directory
+    unarchive:
+      src: /opt/node-v10.16.0-linux-x64.tar.gz
+      dest: /usr/local/lib/nodejs/
+      remote_src: yes
+
+  - name: change owner ship node js package
+    file:
+      path: /usr/local/lib/nodejs/node-v10.16.0-linux-x64/
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: line insert
+    lineinfile:
+      path: ~/.bash_profile
+      line: 'export PATH=/usr/local/lib/nodejs/node-v10.16.0-linux-x64/bin:$PATH'
+      insertbefore: BOF
+
+  - name: Reload a profile
+    shell: source ~/.bash_profile
+
+  - name: Create a symbolic link for node
+    file:
+      src: /usr/local/lib/nodejs/node-v10.16.0-linux-x64/bin/node
+      dest: /usr/bin/node
+      state: link
+
+  - name: Node js version check
+    shell: node -v 2>&1
+    register: nodejsversion
+  - debug: msg={{nodejsversion.stdout}}
+
+  - name: Copy nginx repo from jinja2 template
+    template:
+      src: /home/anbu/ansible/nginx.j2
+      dest: /etc/yum.repos.d/nginx.repo
+      mode: '0644'
+
+  - name: Install nginx
+    yum:
+      name: nginx
+      state: latest
+
+  - name: Restart nginx service
+    service:
+      name: nginx
+      state: restarted
+      enabled: yes
+
+  - name: Install gcc , gcc-c++ , perl & yum-utils  Packages
+    yum:
+      name:
+        - gcc
+        - gcc-c++
+        - perl
+        - yum-utils
+      state: present
+
+  - name: Download pcre package & Unarchive a file to /usr/local
+    unarchive:
+      src: https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz
+      dest: /usr/local/
+      remote_src: yes
+
+  - name : make install pcre package
+    shell: cd /usr/local/pcre-8.42 && ./configure && make && sudo make install
+
+  - name: Download zlib  package & Unarchive a file to /usr/local
+    unarchive:
+      src: http://zlib.net/zlib-1.2.11.tar.gz
+      dest: /usr/local/
+      remote_src: yes
+
+  - name : make install zlib package
+    shell: cd /usr/local/zlib-1.2.11 && ./configure && make && sudo make install
+
+  - name: Download OpenSSL  package & Unarchive a file to /usr/local
+    unarchive:
+      src: http://www.openssl.org/source/openssl-1.1.1b.tar.gz
+      dest: /usr/local/
+      remote_src: yes
+
+  - name : make install OpenSSL  package
+    shell: cd /usr/local/openssl-1.1.1b && ./config && make &&  sudo make install
