@@ -1,0 +1,66 @@
+---
+- name: Jira Installation
+  hosts: 192.168.56.122
+  tasks:
+  - name: Create Jira user 
+    user: 
+      name: jira
+	  state: present
+
+  - name: Create Jira group
+    group:
+      name: jira
+      state: present
+  
+  - name: Check Jira user and group is exists
+    user:
+      name: jira
+      group: jira
+      shell: /bin/bash
+      state: present
+  
+  - name: Create Installation directory
+    file:
+      path: /home/jira/AppInstall/
+      state: directory
+	  recurse: yes
+	  owner: jira
+      group: jira
+      mode: 0655
+     
+  - name: Create Home directory
+    file:
+      path: /home/jira/AppHome/
+      state: directory
+	  recurse: yes
+	  owner: jira
+      group: jira
+      mode: 0655
+	  
+# - name: Java download 
+#    get_url:
+#	  src: https://d3pxv6yz143wms.cloudfront.net/8.232.09.1/java-1.8.0-amazon-corretto-devel-1.8.0_232.b09-1.x86_64.rpm
+#	  dest: /tmp
+ 
+#  - name: Install java
+#    yum:
+#	  name: /tmp/java-1.8.0-amazon-corretto-devel-1.8.0_232.b09-1.x86_64.rpm
+#	  state: present
+	  
+  - name: Download jira_package
+    get_url:
+      url: https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-7.13.5.tar.gz
+      dest: /tmp
+      force: yes
+    
+  - name: Unpack jira download
+    unarchive:
+      src: /tmp/atlassian-jira-software-7.13.5.tar.gz
+      dest: /home/jira/AppInstall/
+      remote_src: true
+
+  - name: Insert home directory detail on jira properties file
+    lineinfile:
+      path: /home/jira/AppInstall/atlassian-jira-software-7.13.5-standalone/atlassian-jira/WEB-INF/classes/jira-application.properties
+      line: jira.home = /home/jira/AppHome/
+      state: present
