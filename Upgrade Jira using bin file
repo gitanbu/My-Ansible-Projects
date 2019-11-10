@@ -8,13 +8,33 @@
 
   - name: Change permission for installation file
     file:
-      dest: /home/anbu/atlassian-jira-software-7.13.8-x64.bin
+      dest: /home/anbu/atlassian-jira-software-8.5.1-x64.bin
       mode: 0755
+
   - name: Create response varfile
     file:
       path: /home/anbu/response.varfile
       state: touch
       mode: 0755
+
+  - name: Server.xml copy
+    copy:
+      src: /opt/atlassian/conf/server.xml
+      dest: /backup/
+      remote_src: yes
+
+  - name: Opt directory backup
+    copy:
+      src: /opt/atlassian
+      dest: /backup/optbkpjira/
+      remote_src: yes
+
+  - name: Var directory backup
+    copy:
+      src: /var/atlassian
+      dest: /backup/varbkpjira/
+      remote_src: yes
+
   - name: Fill response varfile content
     lineinfile:
       path: /home/anbu/response.varfile
@@ -22,21 +42,44 @@
       state: present
       create: yes
     with_items:
-      - { line: 'backupJira$Boolean=true' }
+#      - { line: 'backupJira$Boolean=true' }
       - { line: 'app.install.service$Boolean=false' }
-      - { line: 'existingInstallationDir=/opt/atlassian/' }
-      - { line: 'app.jiraHome=/var/atlassian/' }
+#      - { line: 'existingInstallationDir=/opt/atlassian/' }
+#      - { line: 'app.jiraHome=/var/atlassian/' }
       - { line: 'sys.confirmedUpdateInstallationString=true' }
       - { line: 'sys.languageId=en' }
-      - { line: 'sys.installationDir=/opt/atlassian/' }
-      - { line: 'executeLauncherAction$Boolean=true' }
-      - { line: 'httpPort$Long=8080' }
-      - { line: 'portChoice=custom' }
+#      - { line: 'sys.installationDir=/opt/atlassian/' }
+      - { line: 'executeLauncherAction$Boolean=false' }
+#      - { line: 'httpPort$Long=8080' }
+#      - { line: 'portChoice=custom' }
 
   - name: Jira Upgrade from response varfile
-    command: /home/anbu/atlassian-jira-software-7.13.8-x64.bin  -q -varfile /home/anbu/response.varfile
+    command: /home/anbu/atlassian-jira-software-8.5.1-x64.bin  -q -varfile /home/anbu/response.varfile
 
   - name: Remove response.varfile
     file:
       path: /home/anbu/response.varfile
       state: absent
+
+  - name: Stop existing jira service
+    shell: /opt/atlassian/bin/stop-jira.sh
+
+  - name: Server.xml copy
+    copy:
+      src: /opt/atlassian/conf/server.xml
+      dest: /backup/originalserverxml/
+      remote_src: yes
+
+  - name: Remove server.xml file
+    file:
+      path: /opt/atlassian/conf/server.xml
+      state: absent
+
+  - name: Restore server.xml from backup
+    copy:
+      src: /backup/server.xml
+      dest: /opt/atlassian/conf/
+      remote_src: yes
+
+  - name: Start jira service
+    shell: /opt/atlassian/bin/start-jira.sh
