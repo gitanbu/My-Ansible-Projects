@@ -14,16 +14,16 @@
       state: present
       create: yes
     with_items:
-      - { line: 'backupJira$Boolean=true' }
+      - { line: 'backupJira$Boolean=false' }
       - { line: 'app.install.service$Boolean=true' }
-      - { line: 'existingInstallationDir=/opt/atlassian/' }
+#      - { line: 'existingInstallationDir=/opt/atlassian/' }
       - { line: 'app.jiraHome=/var/atlassian/' }
       - { line: 'sys.confirmedUpdateInstallationString=false' }
       - { line: 'sys.languageId=en' }
       - { line: 'sys.installationDir=/opt/atlassian/' }
       - { line: 'executeLauncherAction$Boolean=true' }
-      - { line: 'httpPort$Long=8080' }
-      - { line: 'portChoice=custom' }
+#      - { line: 'httpPort$Long=8080' }
+#      - { line: 'portChoice=custom' }
 
   - name: Jira Install from response varfile
     command: /home/anbu/atlassian-jira-software-7.13.8-x64.bin  -q -varfile /home/anbu/response.varfile
@@ -32,3 +32,4 @@
     file:
       path: /home/anbu/response.varfile
       state: absent
+
