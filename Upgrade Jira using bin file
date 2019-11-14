@@ -65,11 +65,9 @@
     shell: /opt/atlassian/bin/stop-jira.sh
 
   - name: Server.xml copy
-    copy:
-      src: /opt/atlassian/conf/server.xml
-      dest: /backup/originalserverxml/
+    shell: cp -ra /opt/atlassian/conf/server.xml  /backup/originalserverxml/server.xml.{{ ansible_date_time.iso8601 }}
       remote_src: yes
-
+      
   - name: Remove server.xml file
     file:
       path: /opt/atlassian/conf/server.xml
