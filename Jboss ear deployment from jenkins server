@@ -1,0 +1,36 @@
+---
+- name: Jenkins to  Jboss copy
+  hosts: 10.78.180.41
+  vars:
+  - JBOSS_ROOT: /data01/appserver/jboss1/jboss-eap-6.4/
+  - IP: 10.78.180.41
+  - MGMT_PORT: 10999
+  - JGRP_MC_IP: 231.32.17.83
+  - DIR_NAME=clustera
+  -	OFFSET=1000
+  - NODE_NAME=clustera
+  - PROXY_LIST=10.78.176.30:8080
+  - CLUSTER_BALANCER=clustera
+  
+  tasks:
+  - name : Stop the service 
+    shell: nohup $JBOSS_ROOT/bin/jboss-cli.sh --connect --controller=$IP:$MGMT_PORT command=:shutdown 2>1 &
+	  
+  - name: Rename a uxqa.ear from /deployment location 
+    shell: mv $JBOSS_ROOT/clustera/deployments/uxqa.ear uxqa_$(date +%d-%m-%Y).ear
+	
+  - name: Move a file to backup folder 
+    shell: mv uxqa_* /backup
+    args:
+      chdir: $JBOSS_ROOT/clustera/deployments/
+	
+  - name: war file copy
+    copy:
+      src: /118fs01/Jenkins/jenkins-agent/workspace/UXQA_Dev/uxqa-App/uxqa/ear/target/uxqa.ear
+      dest: $JBOSS_ROOT/clustera/deployments/
+	  
+#    mode: '0644'
+  - name : Start  the service 
+    shell: nohup ./standalone.sh -c standalone-full-ha.xml -b=$IP -bmanagement=$IP -u $JGRP_MC_IP -Djboss.socket.binding.port-offset=$OFFSET -Djboss.server.base.dir=../$DIR_NAME -Djboss.node.name=$NODE_NAME -Djboss.modcluster.proxyList=$PROXY_LIST -Djboss.modcluster.balancer=$CLUSTER_BALANCER 2>1 > /dev/null &
+    args:
+      chdir: /data01/appserver/jboss1/jboss-eap-6.4/bin
