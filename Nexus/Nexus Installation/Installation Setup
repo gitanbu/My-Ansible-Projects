@@ -1,0 +1,100 @@
+---
+- name: Nexus Installation
+  hosts: 192.168.56.154
+  tasks:
+  - name: Create Nexus group
+    group:
+      name: nexus
+      state: present
+
+  - name: Create Nexus User
+    user:
+      name: nexus
+      group: nexus
+      shell: "/bin/bash"
+      state: present
+
+  - name: Create Nexus Data directory
+    file:
+      path: /var/nexus
+      state: "directory"
+      owner: nexus
+      group: nexus
+    become: true
+
+  - name: Create Nexus installation directory
+    file:
+      path: /opt/nexus
+      state: "directory"
+      owner: nexus
+      group: nexus
+
+  - name: Create nexus directory on tmp folder
+    file:
+      path: /tmp/nexus
+      state: "directory"
+      owner: nexus
+      group: nexus
+
+  - name: Extract Nexus package on /opt/nexus Dir
+    unarchive:
+      src: /mnt/nexus-3.16.2-01-unix.tar.gz
+      dest: /opt/nexus
+
+  - name: Create symlink tomcat home dir
+    file:
+      path: "/opt/nexus/nexus"
+      src: "/opt/nexus/nexus-3.16.2-01/"
+      state: link
+      owner: nexus
+      group: nexus
+
+  - name: Setup Nexus data directory
+    lineinfile:
+      dest: /opt/nexus/nexus/bin/nexus.vmoptions
+      regexp: "^-Dkaraf.data=.*"
+      line: "-Dkaraf.data=/var/nexus"
+
+  - name: Setup Nexus tmp directory
+    lineinfile:
+      dest: /opt/nexus/nexus/bin/nexus.vmoptions
+      regexp: "^-Djava.io.tmpdir=.*"
+      line: "-Djava.io.tmpdir=/tmp/nexus"
+
+  - name: Set nexus start user
+    replace:
+      path: /opt/nexus/nexus/bin/nexus.rc
+      regexp: '#run_as_user=""'
+      replace: "run_as_user='nexus'"
+
+  - name: Recursively change ownership of a Installation  directory
+    file:
+      path: "/opt/nexus"
+      state: directory
+      recurse: yes
+      owner: "nexus"
+      group: "nexus"
+
+  - name:  Setup nexus service file.
+    template:
+      src: nexus-service.j2
+      dest: /etc/systemd/system/nexus.service
+      mode: 0755
+
+  - name: force systemd
+    systemd: daemon_reload=yes
+    become: true
+
+  - name: reload service nexus
+    systemd:
+      name: nexus.service
+      state: started
+      enabled: yes
+
+  - name: Make sure Nexus is responding on the configured port.
+    wait_for: port=8081 delay=3 timeout=300
+
+  - name: NEXUS | Actual admin password
+    set_fact:
+      current_nexus_admin_password: admin
+    no_log: true
