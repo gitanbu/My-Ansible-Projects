@@ -1,0 +1,68 @@
+---
+- name: Nexus Installation
+  hosts: 192.168.56.155
+  tasks:
+  - name: Stop service nexus
+    systemd:
+      name: nexus.service
+      state: stopped
+
+  - name: Unlink the directory
+    file:
+      path: "/opt/nexus/nexus"
+      state: absent
+
+
+  - name: Extract Nexus package on /opt/nexus Dir
+    unarchive:
+      src: /mnt/nexus-3.19.0-01-unix.tar.gz
+      dest: /var/nexus/
+
+  - name: Copy a installer to /opt
+    copy:
+      src: /var/nexus/nexus-3.19.0-01
+      dest: /opt/nexus/
+      remote_src: yes
+
+  - name: Link to Directory
+    file:
+      path: "/opt/nexus/nexus"
+      src: "/opt/nexus/nexus-3.19.0-01/"
+      state: link
+      owner: nexus
+      group: nexus
+
+  - name: Change owner ship for directory
+    file:
+      path: "/opt/nexus/nexus-3.19.0-01"
+      state: "directory"
+      owner: "nexus"
+      group: "nexus"
+
+  - name: Replace the version on nexus service file
+    replace:
+      path: /etc/systemd/system/nexus.service
+      regexp: 'nexus-3.16.2-01'
+      replace: "nexus-3.19.0-01"
+
+  - name: Setup Nexus data directory
+    lineinfile:
+      dest: /opt/nexus/nexus/bin/nexus.vmoptions
+      regexp: "^-Dkaraf.data=.*"
+      line: "-Dkaraf.data=/nexus"
+
+  - name: Setup Nexus tmp directory
+    lineinfile:
+      dest: /opt/nexus/nexus/bin/nexus.vmoptions
+      regexp: "^-Djava.io.tmpdir=.*"
+      line: "-Djava.io.tmpdir=/tmp/nexus"
+
+  - name: force systemd
+    systemd: daemon_reload=yes
+    become: true
+
+  - name: Start the nexus service
+    systemd:
+      name: nexus.service
+      state: started
+      enabled: yes
