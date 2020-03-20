@@ -1,0 +1,140 @@
+---
+- name: Jira Installation using Tar installer
+  hosts: 192.168.56.122
+  tasks:
+  - name: Jira group creation
+    group:
+      name: jira
+      state: present
+
+  - name: jira user creation
+    user:
+      name: jira
+      group: jira
+      shell: "/bin/bash"
+      state: present
+
+
+  - name: create jira installation directory
+    file:
+      path: /home/jira/AppInstall
+      state: "directory"
+ 
+
+  - name: create Jira home directory
+    file:
+      path: /home/jira/AppHome
+      state: "directory"
+
+  - name: Unzip jira installer
+    unarchive:
+      src: "/opt/atlassian-jira-software-7.13.8.tar.gz"
+      dest: /home/jira/AppInstall
+      remote_src: true
+ 
+
+  - name: Recursively change ownership of a directory
+    file:
+      path: /home/jira/AppInstall
+      state: directory
+      recurse: yes
+      owner: jira
+      group: jira
+
+  - name: Recursively change ownership of a directory
+    file:
+      path: /home/jira/AppHome
+      state: directory
+      recurse: yes
+      owner: jira
+      group: jira
+
+
+  - name: services | Setup jira.service file.
+    template:
+      src: jira.j2
+      dest: /etc/init.d/jira
+      mode: 0755
+  
+  - name: Setup jira home
+    template:
+      src: settingAppHome.j2
+      dest: "/home/jira/AppInstall/atlassian-jira-software-7.13.8-standalone/atlassian-jira/WEB-INF/classes/jira-application.properties"
+      mode: 0755
+  
+  - name: Setup dbconfig.xml environment for jira
+    template:
+      src: dbconfig.j2
+      dest: "/home/jira/AppHome/dbconfig.xml"
+      mode: 0755 
+
+  - name: copy a cluster properities from template
+    template:
+      src: cluster.j2
+      dest: "/home/jira/AppHome/cluster.properities"
+      owner: jira
+      group: jira
+      mode: 0755
+
+  - name: server xml copy
+    template:
+      src: server.j2
+      dest: /home/jira/AppInstall/atlassian-jira-software-7.13.8-standalone/conf/server.xml
+      owner: jira
+      group: jira
+  
+  - name: jira-config.properities setup
+    template:
+      src: jira-config.j2
+      dest: /home/jira/AppHome/jira-config.properties
+      owner: jira
+      group: jira
+      
+  - name: Start service jira, if started
+    service:
+      name: jira
+      state: started
+      enabled: yes
+ 
+  - name: sleep for 300 seconds and continue with play
+    wait_for:
+      timeout: 300
+      
+  - name: Stop service jira
+    service:
+      name: jira
+      state: stopped
+    
+  - name: Copy a home dir to shared dir
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      mode: "{{item.mode}}"
+      remote_src: yes
+    with_items:
+    - { src: '/home/jira/AppHome/data',dest: '/efs/shared/', mode: '0755'}
+    - { src: '/home/jira/AppHome/plugins',dest: '/efs/shared/', mode: '0755'}
+    - { src: '/home/jira/AppHome/logos',dest: '/efs/shared/', mode: '0755'}
+    - { src: '/home/jira/AppHome/import',dest: '/efs/shared/', mode: '0755'}
+    - { src: '/home/jira/AppHome/export',dest: '/efs/shared/', mode: '0755'}
+    - { src: '/home/jira/AppHome/caches',dest: '/efs/shared/', mode: '0755'}
+
+  - name: Copy home directory files to efs
+    copy:
+      src: /home/jira/AppHome/dbconfig.xml
+      dest: /efs/shared
+      remote_src: yes
+
+  
+  - name: Change ownership
+    file: 
+      path: /efs/shared/dbconfig.xml
+      recurse: yes
+      owner: jira
+      group: jira
+
+  
+   
+
+
+
