@@ -1,0 +1,91 @@
+---
+- name: second node install
+  hosts: 192.168.56.129
+  tasks:
+  - name: stop service
+    command: service jira stop
+    ignore_errors: True
+
+  - name: Jira group creation
+    group:
+      name: jira
+      state: present
+
+  - name: jira user creation
+    user:
+      name: jira
+      group: jira
+      shell: "/bin/bash"
+      state: present
+
+
+  - name: Recursively change ownership of a directory
+    file:
+      path: /home/jira/AppInstall
+      state: directory
+      recurse: yes
+      owner: jira
+      group: jira
+
+  - name: Recursively change ownership of a directory
+    file:
+      path: /home/jira/AppHome
+      state: directory
+      recurse: yes
+      owner: jira
+      group: jira
+  
+  - name: services | Setup jira.service file.
+    template:
+      src: jira.j2
+      dest: /etc/init.d/jira
+      mode: 0755
+
+
+  - name: copy /efs/shared to /home dir
+    copy:
+      src: /efs/shared/
+      dest: /home/jira/AppHome
+      remote_src: yes
+
+
+  - name: Recursively change ownership of mount directory
+    file:
+      path: "/efs/shared/"
+      state: directory
+      recurse: yes
+      owner: jira
+      group: jira
+
+#  - name: Unzip jira installer
+#    unarchive:
+#      src: "/opt/atlassian-jira-software-7.13.8.tar.gz"
+#      dest: /home/jira/AppInstall
+#      remote_src: true
+
+  - name: Setup jira home
+    template:
+     src: settingAppHome.j2
+     dest: "/home/jira/AppInstall/atlassian-jira-software-7.13.8-standalone/atlassian-jira/WEB-INF/classes/jira-application.properties"
+     mode: 0755
+
+  - name: server xml copy
+    template:
+      src: server.j2
+      dest: /home/jira/AppInstall/atlassian-jira-software-7.13.8-standalone/conf/server.xml
+      owner: jira
+      group: jira
+
+  - name: Change owner
+    file: 
+      path: /home/jira/AppInstall/
+      recurse: yes
+      owner: jira
+      group: jira
+
+  - name: Start service jira, if not started
+    systemd:
+      name: jira
+      state: started
+      enabled: yes
+ 

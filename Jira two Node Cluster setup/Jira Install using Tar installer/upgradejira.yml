@@ -1,0 +1,68 @@
+---
+- name: Jira upgrade 
+  hosts: 192.168.56.122
+  tasks:
+  - name: Jira service stop
+    service:
+      name: jira
+      state: stopped
+      enabled: yes
+  
+  - name: Remove existing installation Directory
+    shell: rm -rf /home/jira/AppInstall/*
+     
+       
+  - name: Unzip jira installer
+    unarchive:
+      src: "/opt/atlassian-jira-software-8.4.1.tar.gz"
+      dest: /home/jira/AppInstall
+      remote_src: true
+ 
+ 
+  - name: Setup jira home
+    template:
+      src: settingAppHome.j2
+      dest: "/home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/atlassian-jira/WEB-INF/classes/jira-application.properties"
+      mode: 0755
+  
+  - name: server xml copy
+    template:
+      src: server.j2
+      dest: /home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/conf/server.xml
+      owner: jira
+      group: jira
+      
+  - name: remove existing service file
+    file:
+      path: /etc/init.d/jira
+      state: absent
+   
+  - name: services | Setup jira.service file.
+    template:
+      src: jira.j2
+      dest: /etc/init.d/jira
+      mode: 0755
+                    
+  - name: modify setenv.sh 
+    template:
+      src: setenv.j2
+      dest: "/home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/bin/setenv.sh"
+      mode: 0755
+  
+  - name: Recursively change ownership of a directory
+    file:
+      path: /home/jira/AppInstall
+      state: directory
+      recurse: yes
+      owner: jira
+      group: jira  
+
+  - name: Daemon Reload
+    systemd:
+      daemon_reload: yes
+
+   
+ 
+
+
+

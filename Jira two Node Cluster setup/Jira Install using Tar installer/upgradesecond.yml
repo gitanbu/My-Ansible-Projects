@@ -1,0 +1,60 @@
+---
+- name: second node install
+  hosts: 192.168.56.129
+  tasks:
+
+  - name: stop service
+    command: service jira stop
+    ignore_errors: True
+
+  - name: Remove Installation directory content
+    shell: rm -rf /home/jira/AppInstall/*
+      
+      
+  - name: Unzip jira installer
+    unarchive:
+      src: "/opt/atlassian-jira-software-8.4.1.tar.gz"
+      dest: /home/jira/AppInstall
+      remote_src: true
+
+  - name: Setup jira home
+    template:
+     src: settingAppHome.j2
+     dest: "/home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/atlassian-jira/WEB-INF/classes/jira-application.properties"
+     mode: 0755
+
+  - name: server xml copy
+    template:
+      src: server.j2
+      dest: /home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/conf/server.xml
+      owner: jira
+      group: jira
+  
+  - name: modify setenv.sh
+    template:
+      src: setenv.j2
+      dest: "/home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/bin/setenv.sh"
+      mode: 0755
+
+  - name: Change owner
+    file: 
+      path: /home/jira/AppInstall/
+      recurse: yes
+      owner: jira
+      group: jira
+
+  - name: remove existing service file
+    file:
+      path: /etc/init.d/jira
+      state: absent
+
+  - name: services | Setup jira.service file.
+    template:
+      src: jira.j2
+      dest: /etc/init.d/jira
+      mode: 0755
+
+  - name: just force systemd to reread configs (2.4 and above)
+    systemd:
+      daemon_reload: yes
+ 
