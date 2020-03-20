@@ -41,14 +41,6 @@
       dest: /etc/init.d/jira
       mode: 0755
 
-
-  - name: copy /efs/shared to /home dir
-    copy:
-      src: /efs/shared/
-      dest: /home/jira/AppHome
-      remote_src: yes
-
-
   - name: Recursively change ownership of mount directory
     file:
       path: "/efs/shared/"
@@ -57,11 +49,11 @@
       owner: jira
       group: jira
 
-#  - name: Unzip jira installer
-#    unarchive:
-#      src: "/opt/atlassian-jira-software-7.13.8.tar.gz"
-#      dest: /home/jira/AppInstall
-#      remote_src: true
+  - name: Unzip jira installer
+    unarchive:
+      src: "/opt/atlassian-jira-software-7.13.8.tar.gz"
+      dest: /home/jira/AppInstall
+      remote_src: true
 
   - name: Setup jira home
     template:
@@ -75,7 +67,15 @@
       dest: /home/jira/AppInstall/atlassian-jira-software-7.13.8-standalone/conf/server.xml
       owner: jira
       group: jira
-
+  
+  - name: config file copy to home directory
+    copy:
+      src: ~/efs/shared/{{item}}
+      dest: /home/jira/AppHome/
+      mode: 0774
+    with_items:
+      ['dbconfig.xml','jira-config.properties']
+      
   - name: Change owner
     file: 
       path: /home/jira/AppInstall/
@@ -88,4 +88,5 @@
       name: jira
       state: started
       enabled: yes
- 
+
+  
