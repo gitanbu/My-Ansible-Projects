@@ -1,0 +1,11 @@
+[jira1]
+192.168.56.122   ansible_password=root    ansible_become_password=root
+
+[jira2]
+192.168.56.129   ansible_password=root    ansible_become_password=root
+
+[all:vars]
+ansible_user=root
+ansible_become_user=root
+ansible_connection=ssh
+

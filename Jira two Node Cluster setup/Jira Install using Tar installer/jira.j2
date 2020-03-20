@@ -1,0 +1,41 @@
+#!/bin/sh -e
+#Jira startup script
+#chkconfig: 2345 80 05
+#description: JIRA
+
+# Define some variables
+# Name of app ( JIRA, Confluence, etc )
+APP=jira
+# Name of the user to run as
+USER=jira
+# Location of application's bin directory
+CATALINA_HOME=/home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone
+# Location of Java JDK
+export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.242.b08-0.el7_7.x86_64/jre
+
+case "$1" in
+  # Start command
+  start)
+    echo "Starting $APP"
+    /bin/su -m jira -c /home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/bin/startup.sh
+    ;;
+  # Stop command
+  stop)
+    echo "Stopping $APP"
+    /bin/su -m jira -c /home/jira/AppInstall/atlassian-jira-software-8.4.1-standalone/bin/shutdown.sh
+    echo "$APP stopped successfully"
+    ;;
+   # Restart command
+   restart)
+        $0 stop
+        sleep 5
+        $0 start
+        ;;
+  *)
+    echo "Usage: /etc/init.d/$APP {start|restart|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
+
