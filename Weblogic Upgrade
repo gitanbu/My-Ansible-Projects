@@ -1,0 +1,75 @@
+- name: Weblogic Upgrade
+  hosts: groupname
+  tasks:
+  - name: Taking backup
+    copy:
+      src: /opt/oracle/FMW12.2
+      dest: /opt/oracle/FMW12.2-{{ansible_date_time.date}}
+      recurse: yes
+  
+  - name: Taking Domain backup
+    copy:
+      src: /opt/oracle/domains12.2/{{ Domain_Name }}
+      dest: /opt/oracle/domains12.2/{{ Domain_Name }}-{{ansible_date_time.date}}
+      recurse: yes
+ 
+  - name: Stoppig  Managed Server
+    shell: ./stop_gtw_server1_WithNodeManager.sh
+    args:
+      chdir: /opt/oracle/domains12.2/{{ Domain_Name }}
+
+  - name: Stopping Admin Server
+    shell: ./stop_AdminServer_WithNodeManager.sh
+    args:
+      chdir: /opt/oracle/domains12.2/{{ Domain_Name }}
+
+  - name: Stopping NodeManager
+    shell: ./stopNodeManager.sh
+    args:
+      chdir: /nodemanager
+
+  - name: Extract jdk on /opt/oracle
+    unarchive:
+      src: {{ Binary_home }}/jdk-8u231-linux-x64.tar.gz
+      dest: /opt/oracle/
+      remote_src: yes
+
+  - name: Unlink the existing java
+    file:
+      path: "/opt/oracle"
+      state: absent
+
+  - name: Link to directory
+    file:
+      path: "/opt/oracle/java"
+      src: "/opt/nexus/opt/oracle/jdk1.8.0_231"
+      owner: user
+      group: user
+      force: yes
+      state: link
+
+  - name: De install osb, FMW, remove fmw12.2
+    shell: sh {{ SCRIPTS_HOME }}/osb_deinstall_12213.sh {{ SCRIPTS_HOME }}
+
+  - name: Install FMW, SOA
+    shell: sh {{ SCRIPTS_HOME }}/osb_install_12214.sh {{ SCRIPTS_HOME }} {{ BINARY_HOME }}
+
+  - name: Domain Upgrade
+    shell: sh {{ SCRIPTS_HOME }}/domain_upgrade_122214.sh {{ SCRIPTS_HOME }} {{ DOMAINNAME }}{{ DBHOST }} {{ SERVICENAME }}{{ PREFIXSCHEMA }} {{ SCHEMAPASSWORD }} {{ SYSPASSWORD }}    
+
+  - name: start NodeManager
+    shell: ./startNm.sh
+    args:
+      chdir: /opt/oracle/{{ DOMAINNAME }}/$DOMAINNAME/nodemanager
+  
+  - name: Start Admin Server
+    shell: ./start_AdminServer_WithNodeManager.sh
+    args:
+      chdir: /opt/oracle/domains12.2/{{ DOMAINNAME }}
+
+  - name: Start Managed Server
+    shell: ./start_gtw_server1_WithNodeManager.sh
+    args:
+      chdir: /opt/oracle/domains12.2/{{ DOMAINNAME }}
+
+
