@@ -1,15 +1,15 @@
 ---
 - name: Jenkins to  Jboss copy
-  hosts: 10.78.180.41
+  hosts: all
   vars:
   - JBOSS_ROOT: /data01/appserver/jboss1/jboss-eap-6.4/
-  - IP: 10.78.180.41
+  - IP: 
   - MGMT_PORT: 10999
-  - JGRP_MC_IP: 231.32.17.83
+  - JGRP_MC_IP: 
   - DIR_NAME=clustera
   -	OFFSET=1000
   - NODE_NAME=clustera
-  - PROXY_LIST=10.78.176.30:8080
+  - PROXY_LIST= IP:8080
   - CLUSTER_BALANCER=clustera
   
   tasks:
