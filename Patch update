@@ -4,17 +4,17 @@
   tasks:
   - name: patch update if its redhat family OS
     yum:
-	    name: "*"
-	    update_cache=yes
-	    become: true
+      name: "*"
+      update_cache=yes
+      become: true
     when: ansible_os_family == "RedHat"
 
   - name: patch update if its ubuntu family OS
     yum:
-	    name: "*"
-	    update_cache=yes
-   	  become: true
-	  when: ansible_os_family == 'Debian'
+      name: "*"
+      update_cache=yes
+      become: true
+    when: ansible_os_family == 'Debian'
 	
   - name: restart system to reboot to newest kernel
     shell: "sleep 5 && reboot"
