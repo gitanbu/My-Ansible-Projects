@@ -1,0 +1,54 @@
+---
+- name: Confluence Version Up playbook for QA environment
+  hosts: confluenceZoneA
+  vars:
+    confluence_version: 7.4.1
+  tasks:
+  - name: Decompress the confluence installer to Installtion Directory.
+    unarchive:
+      src: "/nfs/atlassian-confluence-{{confluence_version}}.tar.gz"
+      dest: /home/confluence/AppInstall
+      remote_src: true
+
+  - name: Set Application Home path in confluence-init.properities files
+    template:
+	  src: init.j2
+      dest: "/home/confluence/AppInstall/atlassian-confluence-{{confluence_version}}/confluence/WEB-INF/classes/confluence-init.properties"
+      mode: 0755
+
+  - name: Setup environment for confluence
+     template:
+       src: setenv.j2
+       dest: "/home/confluence/AppInstall/atlassian-confluence-{{confluence_version}}/bin/setenv.sh"
+       mode: 0755
+
+  - name: Write  Server.xml file content
+    template:
+      src: serverxml.j2
+      dest: "/home/confluence/AppInstall/atlassian-confluence-{{confluence_version}}/conf/server.xml"
+      mode: 0755
+
+  - name: Ownership Change for Installation Directory
+    file:
+      path: /home/confluence/AppInstall
+      state: directory
+      recurse: yes
+      owner: confluence
+      group: confluence
+
+  - name: Daemon Reload
+    systemd:
+      daemon_reload: yes
+
+  - name: Confluence service start
+    systemd:
+      name: confluence
+      state: started
+      enabled: yes
+#    when: ansible_hostname == ""
+
+#  - name: ConfluenceZoneB backup
+#    systemd:
+#      state: started
+#      enabled: yes
+#    when: ansible_hostname == ""
