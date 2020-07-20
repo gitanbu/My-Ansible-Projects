@@ -27,6 +27,12 @@
       src: serverxml.j2
       dest: "/home/confluence/AppInstall/atlassian-confluence-{{confluence_version}}/conf/server.xml"
       mode: 0755
+      
+- name : service file change
+    replace:
+      path: /etc/init.d/confluence
+      regexp: '6.13.6'
+      replace: "{{confluence_version}}"
 
   - name: Ownership Change for Installation Directory
     file:
@@ -45,10 +51,10 @@
       name: confluence
       state: started
       enabled: yes
-#    when: ansible_hostname == ""
+    when: ansible_hostname =server1= ""
 
-#  - name: ConfluenceZoneB backup
-#    systemd:
-#      state: started
-#      enabled: yes
-#    when: ansible_hostname == ""
+  - name: ConfluenceZoneB backup
+    systemd:
+      state: started
+      enabled: yes
+    when: ansible_hostname =server2= ""
