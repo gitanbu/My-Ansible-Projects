@@ -1,0 +1,11 @@
+---
+- name: Remove old kernel
+  hosts: all
+  tasks:
+  - name: Utils package update
+    yum:
+      name: yum-utils
+      state: latest
+
+  - name: Remove old kernels from cent OS
+    shell: package-cleanup --oldkernels --count=2 -y
