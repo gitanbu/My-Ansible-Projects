@@ -1,0 +1,128 @@
+---
+- name: Become section
+  block: 
+
+  - name: Create keycloak group
+    group:
+      name: '{{ keycloak_group }}'
+      state: present
+
+  - name: Create keycloak user
+    user:
+      name: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+      state: present
+
+  - name: Mkdir for keycloak installation
+    file:
+      path: '{{ keycloak_path }}'
+      state: directory
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+
+  - name: Install requirement unzip
+    package:
+      name: unzip
+      state: present
+    register: install_unzip_result
+    until: install_unzip_result is succeeded
+    retries: 3
+    delay: 5
+
+  - name: 'Download keycloak {{ keycloak_major_version }}.{{ keycloak_minor_version }} checksum'
+    uri:
+      url: '{{ keycloak_store }}/{{ keycloak_major_version }}.{{ keycloak_minor_version }}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}.zip.sha1'
+      return_content: true
+    register: keycloak_checksum
+
+  - name: 'Download keycloak {{ keycloak_major_version }}.{{ keycloak_minor_version }}'
+    get_url:
+      url: '{{ keycloak_store }}/{{ keycloak_major_version }}.{{ keycloak_minor_version }}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}.zip'
+      dest: '{{ keycloak_download_path }}/'
+      mode: 0755
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+      checksum: 'sha1:{{ keycloak_checksum.content|trim }}'
+    register: download_distrib_result
+    until: download_distrib_result is succeeded
+    retries: 3
+    delay: 5
+
+  - name: 'Install keycloak {{ keycloak_major_version }}.{{ keycloak_minor_version }}'
+    unarchive:
+      src: '{{ keycloak_download_path }}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}.zip'
+      dest: '{{ keycloak_path }}'
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+
+  - name: 'Download {{ postgresql_store }}{{ postgresql_version }}'
+    get_url:
+      url: '{{ postgresql_store }}/{{postgresql_version}}'
+      dest: '{{ keycloak_download_path }}/'
+      mode: 0755
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+    register: download_distrib_result
+    until: download_distrib_result is succeeded
+    retries: 3
+    delay: 5
+
+  - name: Create postgresql Directory 
+    shell: mkdir -p postgresql/main
+    args:
+      chdir: "{{keycloak_path}}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}/modules/system/layers/keycloak/org/"
+
+  - name: Permission postgresql Directory 
+    shell: chown '{{ keycloak_user }}:{{ keycloak_group }}' ./postgresql -R 
+    args:
+      chdir: "{{keycloak_path}}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}/modules/system/layers/keycloak/org/"
+
+  - name: 'cp postgresql {{ postgresql_version }}' 
+    shell: " cp {{ keycloak_download_path }}/{{ postgresql_version }} ./ "
+    args:
+      chdir: "{{keycloak_path}}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}/modules/system/layers/keycloak/org/postgresql/main"
+
+  - name: module XML file.
+    template:
+      src: module.j2
+      dest: "{{keycloak_path}}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}/modules/system/layers/keycloak/org/postgresql/main/module.xml"
+      mode: 0755
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+
+  - name: module XML file.
+    template:
+      src: standalone.j2
+      dest: "{{keycloak_path}}/keycloak-{{ keycloak_major_version }}.{{ keycloak_minor_version }}/standalone/configuration/standalone-ha.xml"
+      mode: 0755
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+
+  - name: services | Setup keycloak.service file.
+    template:
+      src: standaloneh1.j2
+      dest: /etc/systemd/system/keycloak.service
+      mode: 0755
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+    when: keycloak_role == "master"
+
+  - name: services | Setup keycloak.service file.
+    template:
+      src: standaloneh2.j2
+      dest: /etc/systemd/system/keycloak.service
+      mode: 0755
+      owner: '{{ keycloak_user }}'
+      group: '{{ keycloak_group }}'
+    when: keycloak_role == "slave"
+
+  - name: force systemd
+    systemd: daemon_reload=yes
+  
+  - name: reload keycloak nexus
+    systemd:
+      name: keycloak.service
+      state: started
+      enabled: yes
+
+
